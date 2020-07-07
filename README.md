@@ -1,3 +1,5 @@
+
+[ssl证书格式的区别](https://blog.freessl.cn/ssl-cert-format-introduce/)
 [https配置教程](https://www.thomasvitale.com/https-spring-boot-ssl-certificate/)
 
 ### 摘要
