@@ -1,8 +1,12 @@
 package com.example.https;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import javax.net.ssl.SSLContext;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -10,7 +14,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustAllStrategy;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.ssl.SSLContexts;
@@ -36,13 +40,13 @@ public class HttpsApplication implements CommandLineRunner {
   @Override
   public void run(String... args) throws Exception {
 
-    KeyStore trustStore = KeyStore.getInstance("jks");
-    final InputStream resourceAsStream = getClass()
-        .getResourceAsStream("/keystore.jks");
-    trustStore.load(resourceAsStream, "123456".toCharArray());
+    final KeyStore keyStore = load("/client-keystore.jks");
+    final KeyStore trustStore = load("/client-truststore.jks");
+
     SSLContext sslContext = SSLContexts.custom()
         .setProtocol(SSLConnectionSocketFactory.TLS)
-        .loadTrustMaterial(trustStore, new TrustAllStrategy()).build();
+        .loadKeyMaterial(keyStore, "secret".toCharArray())
+        .loadTrustMaterial(trustStore, TrustSelfSignedStrategy.INSTANCE).build();
     SSLConnectionSocketFactory sslSF = new SSLConnectionSocketFactory(sslContext,
         NoopHostnameVerifier.INSTANCE);
 
@@ -57,5 +61,14 @@ public class HttpsApplication implements CommandLineRunner {
       final String content = IOUtils.toString(entity.getContent(), StandardCharsets.UTF_8);
       System.out.println(content);
     }
+  }
+
+  private KeyStore load(String path)
+      throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException {
+    KeyStore store = KeyStore.getInstance("jks");
+    final InputStream resourceAsStream = getClass()
+        .getResourceAsStream(path);
+    store.load(resourceAsStream, "secret".toCharArray());
+    return store;
   }
 }
